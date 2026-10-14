@@ -43,7 +43,6 @@ Record the actual results after running `python3 main.py`.
 | 2 | Invalid category: `Food` | It returned: Unsupported category. Please try again. |
 | 3 | Affected users: `0` | It returned: Entry must be a positive integer greater than 0 |
 
-Do not record a test as passed unless you observed the expected behaviour.
 
 ## 3. Areas identified for improvement
 
