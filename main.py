@@ -15,9 +15,9 @@ from campusflow.storage import load_tickets, save_tickets
 
 def display_menu():
     print("""
-    =========================
+    ==============================
         CAMPUS WORKFLOW
-    =========================
+    ==============================
         1. CREATE TICKET
         2. LIST ALL TICKETS
         3. VIEW TICKET
@@ -26,7 +26,10 @@ def display_menu():
         6. WORK QUEUE
         7. REPORTS
         8. REOPEN TICKET
-        9. EXIT
+        9. ADD FOLLOW-UP NOTES
+       10. VIEW TICKET NOTES
+       11. EXIT
+    ==============================
     """)
 
 
