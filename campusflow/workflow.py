@@ -77,7 +77,7 @@ def get_work_queue(
     unresolved_tickets = [
         ticket
         for ticket in tickets
-        if ticket["status"] in ("open")
+            if ticket["status"] == "open"
     ]
 
     return sorted(
