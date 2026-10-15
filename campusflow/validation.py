@@ -55,3 +55,25 @@ def check_staff_name(name):
     if not isinstance(name, str) or not name.strip():
         raise ValidationError("Staff name cannot be empty")
     return name.strip()
+
+
+NOTE_MIN_LENGTH = 5
+NOTE_MAX_LENGTH = 300
+
+
+def check_note_author(author):
+    if not isinstance(author, str) or not author.strip():
+        raise ValidationError("Note author cannot be empty")
+    return author.strip()
+
+
+def check_note_message(message):
+    if not isinstance(message, str):
+        raise ValidationError("Note message must be text")
+    cleaned = message.strip()
+    if not NOTE_MIN_LENGTH <= len(cleaned) <= NOTE_MAX_LENGTH:
+        raise ValidationError(
+            f"Note message must be {NOTE_MIN_LENGTH}-{NOTE_MAX_LENGTH} "
+            f"characters (got {len(cleaned)})"
+        )
+    return cleaned
