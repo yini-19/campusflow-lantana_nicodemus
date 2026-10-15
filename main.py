@@ -9,7 +9,13 @@ from campusflow.workflow import (
     get_work_queue,
     reopen_ticket,
 )
-from campusflow.reports import generate_report
+from campusflow.cli_views import (
+    add_note_view,
+    report_view,
+    search_view,
+    view_notes_view,
+)
+from campusflow.understanding_check import run_check
 from campusflow.storage import load_tickets, save_tickets
 
 
@@ -28,7 +34,9 @@ def display_menu():
         8. REOPEN TICKET
         9. ADD FOLLOW-UP NOTES
        10. VIEW TICKET NOTES
-       11. EXIT
+       11. SEARCH TICKETS
+       12. UNDERSTANDING CHECK
+       13. EXIT
     ==============================
     """)
 
@@ -77,7 +85,7 @@ def main():
                 queue = get_work_queue(tickets)
 
                 if not queue:
-                    print("No unresolved tickets.")
+                    print("No open tickets.")
                 else:
                     for ticket in queue:
                         print(
@@ -88,18 +96,7 @@ def main():
                         )
 
             elif choice == "7":
-                report = generate_report(tickets)
-
-                print(f'Total tickets: {report["total_tickets"]}')
-                print("Status breakdown:")
-
-                for status, count in report["status_breakdown"].items():
-                    print(f"  {status}: {count}")
-
-                print("Priority breakdown:")
-
-                for priority, count in report["priority_breakdown"].items():
-                    print(f"  {priority}: {count}")
+                report_view(tickets)
 
             elif choice == "8":
                 ticket_id = input("Ticket ID: ").strip().upper()
@@ -109,11 +106,24 @@ def main():
                 print("Ticket reopened successfully.")
 
             elif choice == "9":
+                if add_note_view(tickets):
+                    save_tickets(tickets)
+
+            elif choice == "10":
+                view_notes_view(tickets)
+
+            elif choice == "11":
+                search_view(tickets)
+
+            elif choice == "12":
+                run_check()
+
+            elif choice == "13":
                 print("Goodbye!")
                 break
 
             else:
-                print("Invalid choice. Select an option between 1 and 9.")
+                print("Invalid choice. Select an option between 1 and 13.")
 
         except (ValueError, OSError) as error:
             print(f"Error: {error}")

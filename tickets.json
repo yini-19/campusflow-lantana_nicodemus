@@ -7,6 +7,24 @@
         "affected_users": 3,
         "priority": "medium",
         "status": "in_progress",
-        "assigned_to": "Kings"
+        "assigned_to": "you",
+        "notes": [
+            {
+                "note_id": "N001",
+                "author": "lan",
+                "message": "we have not sleep oo"
+            }
+        ]
+    },
+    {
+        "id": "T002",
+        "title": "me",
+        "category": "Other",
+        "urgency": "low",
+        "affected_users": 7,
+        "priority": "medium",
+        "status": "open",
+        "assigned_to": null,
+        "notes": []
     }
 ]

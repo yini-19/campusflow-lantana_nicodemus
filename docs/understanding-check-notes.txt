@@ -1,0 +1,2 @@
+Q1 (answered B): A ticket can not be in progress when it is not assigned to any staff to attend to it. It has to be assigned to a staff to look into the ticket, that is when the resolution is in progress
+Q4 (answered C): Already resolved ticket means that a note must have already been attached to it so there is no need adding note
