@@ -145,3 +145,11 @@ All engineers should run the full test suite before submitting their changes for
 ## 10. Agreement
 
 These decisions serve as the shared contract for the sprint. Any changes to function signatures, ticket fields, or return values must be agreed upon by both fellows and documented here before integrating code that could introduce incompatibilities.
+
+
+Initial state:
+Input:
+Expected result:
+Actual result:
+Test name:
+Code change made (if any):
