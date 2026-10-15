@@ -1,6 +1,13 @@
-
 import json
 import os
+
+from campusflow.validation import (
+    ValidationError,
+    check_affected_users,
+    check_category,
+    check_title,
+    check_urgency,
+)
 
 ticket_dict = {}
 FILENAME = "tickets.json"
@@ -10,46 +17,42 @@ allowed_urgencies = ("low", "medium", "high")
 
 
 
-def validate_title() -> str:
+def _prompt_until_valid(prompt, check):
+    """Ask repeatedly until `check` accepts the text; print its message otherwise."""
     while True:
-        title = input("Ticket title: ").strip()
-        if title:
-            return title
-        print("Title field must not be empty")
+        text = input(prompt)
+        try:
+            return check(text)
+        except ValidationError as error:
+            print(error)
+
+
+def _parse_affected_users(text):
+    text = text.strip()
+    if not text.isdigit():
+        raise ValidationError("Entry must be a positive integer greater than 0")
+    return check_affected_users(int(text))
+
+
+def validate_title() -> str:
+    return _prompt_until_valid("Ticket title: ", check_title)
 
 
 def validate_category() -> str:
-    while True:
-        category = input(
-            "Select category (Network, Software, Hardware, Other): "
-        ).strip().capitalize()
-
-        if category in allowed_categories:
-            return category
-        print("Unsupported category. Please try again.")
+    return _prompt_until_valid(
+        "Select category (Network, Software, Hardware, Other): ",
+        check_category,
+    )
 
 
 def validate_urgency() -> str:
-    while True:
-        urgency = input(
-            "Urgency level (high, medium or low): "
-        ).strip().lower()
-
-        if urgency in allowed_urgencies:
-            return urgency
-        print("Invalid urgency. Enter low, medium, or high.")
+    return _prompt_until_valid(
+        "Urgency level (high, medium or low): ", check_urgency
+    )
 
 
 def validate_affected_users() -> int:
-    while True:
-        affected_users = input(
-            "Number of affected users: "
-        ).strip()
-
-        if affected_users.isdigit() and int(affected_users) > 0:
-            return int(affected_users)
-
-        print("Entry must be a positive integer greater than 0")
+    return _prompt_until_valid("Number of affected users: ", _parse_affected_users)
 
 
 def calculate_priority(urgency: str, affected_users: int) -> str:
@@ -98,6 +101,7 @@ def create_ticket(tickets: list[dict]) -> dict:
         "priority": "",
         "status": "open",
         "assigned_to": None,
+        "notes": [],
     }
 
     ticket["priority"] = calculate_priority(

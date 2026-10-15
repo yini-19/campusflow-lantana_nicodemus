@@ -1,25 +1,50 @@
+from campusflow.validation import (
+    ALLOWED_STATUSES,
+    ValidationError,
+    check_staff_name,
+)
+
+
+def find_ticket(tickets: list[dict], ticket_id: str) -> dict:
+    for ticket in tickets:
+        if ticket["id"] == ticket_id:
+            return ticket
+    raise ValidationError(f"Ticket '{ticket_id}' not found")
+
+
+def check_transition(ticket: dict, new_status: str) -> None:
+    """Raise ValidationError if the move is illegal. Never changes the ticket."""
+    current_status = ticket["status"]
+
+    if current_status == "resolved":
+        raise ValidationError("Resolved tickets must be reopened first")
+
+    if new_status == current_status:
+        raise ValidationError(f"Ticket is already {current_status}")
+
+    if new_status == "open":
+        raise ValidationError("Use reopen_ticket() to reopen a resolved ticket")
+
+    if new_status == "in_progress" and not ticket["assigned_to"]:
+        raise ValidationError("Cannot start work on an unassigned ticket")
+
+    if new_status == "resolved" and current_status != "in_progress":
+        raise ValidationError("Only an in-progress ticket can be resolved")
+
 
 def assign_ticket(
     tickets: list[dict],
     ticket_id: str,
     staff_name: str,
 ) -> dict:
-    staff_name = staff_name.strip()
+    staff_name = check_staff_name(staff_name)
+    ticket = find_ticket(tickets, ticket_id)
 
-    if not staff_name:
-        raise ValueError("Staff name cannot be empty")
+    if ticket["status"] == "resolved":
+        raise ValidationError("Reopen the ticket before modifying it")
 
-    for ticket in tickets:
-        if ticket["id"] == ticket_id:
-            if ticket["status"] == "resolved":
-                raise ValueError(
-                    "Reopen the ticket before modifying it"
-                )
-
-            ticket["assigned_to"] = staff_name
-            return ticket
-
-    raise ValueError(f"Ticket '{ticket_id}' not found")
+    ticket["assigned_to"] = staff_name
+    return ticket
 
 
 def change_status(
@@ -27,53 +52,17 @@ def change_status(
     ticket_id: str,
     new_status: str,
 ) -> dict:
-    allowed_statuses = {"open", "in_progress", "resolved"}
-
     new_status = new_status.strip().lower()
 
-    if new_status not in allowed_statuses:
-        raise ValueError(f"Invalid status: {new_status}")
+    if new_status not in ALLOWED_STATUSES:
+        raise ValidationError(f"Invalid status: {new_status}")
 
-    for ticket in tickets:
-        if ticket["id"] == ticket_id:
-            current_status = ticket["status"]
+    ticket = find_ticket(tickets, ticket_id)
+    check_transition(ticket, new_status)
 
-            if current_status == "resolved":
-                raise ValueError(
-                    "Resolved tickets must be reopened first"
-                )
+    ticket["status"] = new_status
+    return ticket
 
-            if new_status == current_status:
-                raise ValueError(
-                    f"Ticket is already {current_status}"
-                )
-
-            if new_status == "open":
-                raise ValueError(
-                    "Use reopen_ticket() to reopen a resolved ticket"
-                )
-
-            if new_status == "in_progress":
-                if current_status != "open":
-                    raise ValueError(
-                        "Ticket must be open before work starts"
-                    )
-
-                if not ticket["assigned_to"]:
-                    raise ValueError(
-                        "Cannot start work on an unassigned ticket"
-                    )
-
-            elif new_status == "resolved":
-                if current_status != "in_progress":
-                    raise ValueError(
-                        "Only an in-progress ticket can be resolved"
-                    )
-
-            ticket["status"] = new_status
-            return ticket
-
-    raise ValueError(f"Ticket '{ticket_id}' not found")
 
 def get_work_queue(
     tickets: list[dict],
@@ -103,14 +92,10 @@ def reopen_ticket(
     tickets: list[dict],
     ticket_id: str,
 ) -> dict:
-    for ticket in tickets:
-        if ticket["id"] == ticket_id:
-            if ticket["status"] != "resolved":
-                raise ValueError(
-                    "Only resolved tickets can be reopened"
-                )
+    ticket = find_ticket(tickets, ticket_id)
 
-            ticket["status"] = "open"
-            return ticket
+    if ticket["status"] != "resolved":
+        raise ValidationError("Only resolved tickets can be reopened")
 
-    raise ValueError(f"Ticket '{ticket_id}' not found")
+    ticket["status"] = "open"
+    return ticket

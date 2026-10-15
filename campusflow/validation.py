@@ -53,5 +53,5 @@ def check_affected_users(value):
 
 def check_staff_name(name):
     if not isinstance(name, str) or not name.strip():
-        raise ValidationError("Staff name must not be blank")
+        raise ValidationError("Staff name cannot be empty")
     return name.strip()
