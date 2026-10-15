@@ -84,13 +84,18 @@ def save_ticket(ticket: dict):
         json.dump(all_tickets, f, indent=4)
 
 
-def create_ticket(tickets: list[dict]) -> dict:
-    last_num = max(
-        (int(ticket["id"][1:]) for ticket in tickets),
-        default=0,
-    )
+def next_ticket_id(tickets: list[dict]) -> str:
+    """Return the next free ticket ID, e.g. T008 after T007.
 
-    ticket_id = f"T{last_num + 1:03d}"
+    Compares IDs as numbers (T10 is bigger than T2), so the result cannot
+    collide with an existing ticket.
+    """
+    numbers = [int(ticket["id"][1:]) for ticket in tickets]
+    return f"T{max(numbers, default=0) + 1:03d}"
+
+
+def create_ticket(tickets: list[dict]) -> dict:
+    ticket_id = next_ticket_id(tickets)
 
     ticket = {
         "id": ticket_id,
