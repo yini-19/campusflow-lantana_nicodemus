@@ -1,4 +1,3 @@
-
 import json
 import tempfile
 import unittest
@@ -68,6 +67,8 @@ class TestTicketStorage(unittest.TestCase):
                 **self.make_ticket(),
                 "id": "T002",
                 "title": "Broken keyboard",
+                "urgency": "low",
+                "affected_users": 1,
                 "priority": "low",
             },
         ]
