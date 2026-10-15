@@ -1,4 +1,3 @@
-
 import unittest
 
 from campusflow.workflow import (
@@ -135,19 +134,16 @@ class TestWorkQueue(unittest.TestCase):
             ["T001", "T002", "T008", "T003", "T010"],
         )
 
-    def test_queue_excludes_resolved_tickets(self):
+    def test_queue_contains_only_open_tickets(self):
         tickets = [
             make_ticket("T001", "critical", "open"),
             make_ticket("T002", "high", "resolved"),
-            make_ticket("T003", "low", "in_progress"),
+            make_ticket("T003", "low", "in_progress", "Ada"),
         ]
 
         queue = get_work_queue(tickets)
 
-        self.assertEqual(
-            [ticket["id"] for ticket in queue],
-            ["T001", "T003"],
-        )
+        self.assertEqual([t["id"] for t in queue], ["T001"])
 
     def test_empty_queue_returns_empty_list(self):
         self.assertEqual(get_work_queue([]), [])
