@@ -1,132 +1,55 @@
-# CampusFlow — AI-Native Engineering Sprint
+# CampusFlow Next
 
-**A Python Command-Line Helpdesk Ticket Management System**
+**A Python command-line helpdesk ticket manager, upgraded for reliability.**
 
-## 1. Project Overview
+CampusFlow helps campus support staff record technical problems (Wi-Fi, laptops, software, learning tools), calculate priorities, assign responsibility, track progress, leave follow-up notes and report on unresolved work.
 
-### The Problem
+CampusFlow Next is a quality upgrade of our first version. It adds stricter validation, controlled follow-up notes, safe JSON loading and saving, and a larger automated test suite. It uses only the Python standard library.
 
-Learn2Earn campus staff receive technical support requests involving Wi-Fi outages, faulty laptops, broken development environments, and inaccessible platforms. When these problems are reported informally, requests can be lost, priorities can become unclear, and responsibility may not be assigned.
+## 1. Team
 
-### Our Solution
+| Engineer | GitHub | Responsibilities |
+| --- | --- | --- |
+| Engineer A: YIYAKAZAH NICODEMUS | `yini-19` | Validation helpers, status and assignment safety, follow-up notes, JSON validation, save/load and ID continuity |
+| Engineer B: *(full name to add)* | `michaelbag8` | Search and filtering, reports, notes menus in the CLI, Engineering Understanding Check |
 
-**CampusFlow** is a Python command-line application that helps campus staff record technical problems, calculate their priorities, assign responsibility, track progress, and monitor unresolved issues.
+Both engineers agree the function contracts, write tests and review each other's pull requests.
 
-The application uses ordinary Python business logic to calculate ticket priorities and JSON files to preserve ticket data between sessions.
+## 2. Technology
 
-### Project Goals
+- Python 3.10 or later
+- Command-line interface
+- JSON file storage
+- `unittest` for automated tests
+- Git and GitHub for collaboration and code review
 
-* Record and validate support tickets.
-* Automatically generate unique ticket IDs.
-* Calculate ticket priority using specified rules.
-* Assign tickets to responsible staff members.
-* Track ticket status from open to resolved.
-* Display an ordered queue of unresolved tickets.
-* Generate reports showing ticket totals and breakdowns.
-* Save and reload tickets using JSON.
-* Verify functionality with automated tests.
-* Demonstrate responsible AI-assisted learning and professional GitHub collaboration.
+No web framework, database, API key or external package is needed.
 
-## 2. Team Members and Responsibilities
+## 3. Features
 
-Update the placeholders below with the actual names and GitHub usernames of both fellows.
+### Original features (preserved)
 
-| Team member       | Role                              | Main responsibilities                                                                                                                                       |
-| ----------------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Fellow A's Name] | Engineer A                        | Ticket creation, input validation, priority calculation, and related automated tests.                                                                       |
-| [Fellow B's Name] | Engineer B                        | Ticket assignment, status workflow, work queue, reporting, and related automated tests.                                                                     |
-| Both fellows      | Integration and quality assurance | Agree on function contracts, integrate JSON persistence, review each other's pull requests, maintain AI learning logs, and prepare the final demonstration. |
+| Feature | Behaviour |
+| --- | --- |
+| Create tickets | Title, category, urgency and affected users are validated; ID and priority are generated |
+| List / view tickets | Show all tickets or one ticket by ID |
+| Assign tickets | Assign to a named staff member; blank names and unknown IDs are rejected |
+| Status workflow | `open` → `in_progress` → `resolved`; a resolved ticket can be reopened to `open` |
+| Open Work Queue | Shows **only open tickets**, ordered critical, high, medium, low; ties go to the lower numeric ID |
+| Reports | Total tickets and counts by status and by priority |
+| JSON persistence | Tickets are saved on every change and reloaded on start |
 
+### New in CampusFlow Next
 
-## 3. Technology Stack
+- **Centralized validation.** One set of rules is used by ticket creation, assignment, status changes, notes and JSON loading.
+- **Validate before mutate.** An invalid create, assign, status or note action raises an error and leaves the whole ticket collection unchanged.
+- **Follow-up notes.** Open or in-progress tickets accept notes (`N001`, `N002`, ...). Notes are kept when a ticket is resolved or reopened. Resolved tickets reject new notes until they are reopened.
+- **Safe JSON.** A file is fully validated before it replaces memory. Corrupt JSON, duplicate IDs and inconsistent records are rejected and current data is kept. Saving is atomic, so a failed write cannot corrupt the existing file.
+- **ID continuity.** After a reload, new ticket and note IDs continue from the highest existing number.
 
-* **Language:** Python 3
-* **Interface:** Command-line interface (CLI)
-* **Data storage:** JSON
-* **Automated testing:** Python's built-in `unittest` module
-* **Version control:** Git
-* **Collaboration and code review:** GitHub
-* **AI-assisted learning:** AI tools used for explanations, experimentation, debugging, and critical evaluation
+> **Engineer B to complete:** Search Tickets, the enhanced report fields (category counts, unresolved and resolved counts, resolution percentage), the notes menu entries and the Engineering Understanding Check. Add them here, with their menu numbers, once their PR is merged.
 
-The project uses Python's standard library. No web framework, database server, AI SDK, or API key is required.
-
-## 4. Project Features
-
-CampusFlow must provide the following seven features through a menu that continues running until the user chooses Exit.
-
-### F1 — Create Tickets
-
-Users can create a support ticket by providing:
-
-* `title`: Description of the reported problem.
-* `category`: Type of technical issue.
-* `urgency`: Reported urgency level.
-* `affected_users`: Number of users affected.
-
-The application validates the input, calculates priority, generates a unique ID, and stores the new ticket.
-
-### F2 — List and View Tickets
-
-Users can display all tickets or inspect an individual ticket by its ID.
-
-### F3 — Assign Tickets
-
-Users can assign a ticket to a named staff member. Blank staff names and unknown ticket IDs must be rejected.
-
-### F4 — Manage Ticket Status
-
-Tickets use three main statuses:
-
-* `open`: The issue has been reported.
-* `in_progress`: An assigned staff member is working on the issue.
-* `resolved`: The issue has been fixed.
-
-An unassigned ticket cannot move into `in_progress`. A resolved ticket must be explicitly reopened, setting its status to `open`, before it can be modified again.
-
-### F5 — Display the Work Queue
-
-The queue displays unresolved tickets in this priority order:
-
-1. Critical
-2. High
-3. Medium
-4. Low
-
-Tickets with the same priority are ordered by their numeric ticket IDs, from earliest to latest. Resolved tickets are excluded.
-
-### F6 — Generate Reports
-
-Reports display:
-
-* Total number of tickets.
-* Ticket counts grouped by status.
-* Ticket counts grouped by priority.
-
-### F7 — JSON Persistence
-
-Tickets are saved to JSON and reloaded when the application starts.
-
-* A missing data file allows a fresh start.
-* Malformed JSON produces a clear error rather than silently erasing data.
-* Existing ticket IDs are preserved.
-* New tickets must receive unique IDs after a restart.
-
-## 5. Ticket Data Structure
-
-Each ticket contains the following eight required fields:
-
-| Field            | Description              | Example                  |
-| ---------------- | ------------------------ | ------------------------ |
-| `id`             | Unique ticket identifier | `"T001"`                 |
-| `title`          | Problem description      | `"Campus Wi-Fi is down"` |
-| `category`       | Type of issue            | `"Network"`              |
-| `urgency`        | Reported urgency         | `"high"`                 |
-| `affected_users` | Number of affected users | `15`                     |
-| `priority`       | Calculated priority      | `"critical"`             |
-| `status`         | Current workflow status  | `"open"`                 |
-| `assigned_to`    | Responsible staff member | `None`                   |
-
-Example ticket:
+## 4. Ticket data structure
 
 ```python
 {
@@ -138,171 +61,176 @@ Example ticket:
     "priority": "critical",
     "status": "open",
     "assigned_to": None,
+    "notes": [
+        {"note_id": "N001", "author": "Mentor A", "message": "Router reboot attempted"},
+    ],
 }
 ```
 
-### Validation Rules
+### Validation rules
 
-* Ticket IDs must be unique and automatically generated.
-* Allowed categories are `Network`, `Hardware`, `Software`, and `Other`.
-* Allowed urgency levels are `low`, `medium`, and `high`.
-* Titles must not be blank.
-* `affected_users` must be a positive integer; zero, negative numbers, decimals, and text are invalid.
-* Valid case variations must be normalized consistently.
-* Invalid inputs must produce useful errors without corrupting stored tickets.
+| Field | Rule |
+| --- | --- |
+| `id` | Unique, generated by the program, format `T001` |
+| `title` | Not blank after trimming |
+| `category` | `Network`, `Hardware`, `Software` or `Other` (input is case-insensitive and stored in this canonical form) |
+| `urgency` | `low`, `medium` or `high` (input is case-insensitive) |
+| `affected_users` | A strictly positive whole number. Zero, negatives, decimals, text and booleans are rejected |
+| `priority` | Must match the priority rule below |
+| `status` | `open`, `in_progress` or `resolved` |
+| `assigned_to` | A non-blank name or `None`. An `in_progress` ticket must be assigned |
+| note `author` | Not blank |
+| note `message` | 5 to 300 characters after trimming |
 
-## 6. Priority Calculation Rules
+### Status rules
 
-Ticket priority is calculated using ordinary Python business logic. AI is not used to determine ticket priority at runtime.
+- An unassigned ticket cannot move to `in_progress`.
+- Only an `in_progress` ticket can be resolved.
+- A resolved ticket cannot be assigned, changed or given notes until it is reopened.
+- Only a resolved ticket can be reopened.
 
-The rules must be evaluated in the following order, applying the first matching rule.
+### Priority rules
 
-| Rule | Condition                                   | Result     |
-| ---- | ------------------------------------------- | ---------- |
-| 1    | High urgency AND at least 10 affected users | `critical` |
-| 2    | High urgency OR at least 10 affected users  | `high`     |
-| 3    | Medium urgency OR at least 3 affected users | `medium`   |
-| 4    | All remaining valid tickets                 | `low`      |
+Rules are applied in order; the first match wins.
 
-Examples:
+| Rule | Condition | Result |
+| --- | --- | --- |
+| 1 | High urgency **and** at least 10 affected users | `critical` |
+| 2 | High urgency **or** at least 10 affected users | `high` |
+| 3 | Medium urgency **or** at least 3 affected users | `medium` |
+| 4 | Everything else | `low` |
 
-| Urgency | Affected users | Expected priority |
-| ------- | -------------: | ----------------- |
-| High    |             12 | Critical          |
-| High    |              2 | High              |
-| Low     |             10 | High              |
-| Low     |              4 | Medium            |
-| Medium  |              1 | Medium            |
-| Low     |              1 | Low               |
-
-## 7. Project Structure
-
-The planned repository structure is:
+## 5. Project structure
 
 ```text
 campusflow/
 ├── README.md
-├── .gitignore
 ├── main.py
+├── tickets.json              # data file, created on first save
 ├── campusflow/
 │   ├── __init__.py
-│   ├── tickets.py
-│   ├── workflow.py
-│   ├── storage.py
-│   └── reports.py
+│   ├── validation.py         # ValidationError and check_* helpers
+│   ├── tickets.py            # prompts, priority calculation, ticket creation, next_ticket_id
+│   ├── workflow.py           # find_ticket, check_transition, assign, status, reopen, work queue
+│   ├── notes.py              # add_note, get_notes, next_note_id
+│   ├── storage.py            # validate_ticket, validate_collection, load, reload, save
+│   └── reports.py            # report totals and breakdowns
 ├── tests/
 │   ├── test_tickets.py
 │   ├── test_workflow.py
-│   └── test_storage.py
+│   ├── test_storage.py
+│   ├── test_validation.py
+│   ├── test_ticket_safety.py
+│   ├── test_notes.py
+│   ├── test_storage_safety.py
+│   └── test_bug_hunter_reports.py
 └── docs/
-    ├── ai-learning-log.md
-    └── design-decisions.md
+    ├── baseline-check.md
+    ├── design-decisions.md
+    └── ai-learning-log.md
 ```
 
-### Module Responsibilities
+### Module responsibilities
 
-| File                       | Responsibility                                                                                                                |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `main.py`                  | Displays the menu, collects user input, calls application functions, handles user-facing errors, and coordinates persistence. |
-| `campusflow/tickets.py`    | Validates ticket fields, calculates priority, and creates ticket records.                                                     |
-| `campusflow/workflow.py`   | Assigns tickets, manages status transitions, retrieves tickets, and builds the work queue.                                    |
-| `campusflow/storage.py`    | Generates unique IDs and loads and saves JSON data.                                                                           |
-| `campusflow/reports.py`    | Calculates totals and breakdowns by status and priority.                                                                      |
-| `tests/test_tickets.py`    | Tests ticket creation, input validation, and priority rules.                                                                  |
-| `tests/test_workflow.py`   | Tests assignment, lifecycle rules, ticket retrieval, and queue ordering.                                                      |
-| `tests/test_storage.py`    | Tests JSON persistence, missing files, malformed JSON, and ID uniqueness after reload.                                        |
-| `docs/design-decisions.md` | Records agreed function contracts, data structures, and design decisions.                                                     |
-| `docs/ai-learning-log.md`  | Records each fellow's verified AI learning interactions.                                                                      |
+| File | Responsibility |
+| --- | --- |
+| `main.py` | Menu loop, user input, friendly error messages, saving after changes |
+| `campusflow/validation.py` | Pure validation helpers with no input or printing. Raises `ValidationError` |
+| `campusflow/tickets.py` | Input prompts that retry until valid, priority calculation, ticket creation |
+| `campusflow/workflow.py` | Assignment, status transitions (`check_transition` never changes data), reopening, Open Work Queue |
+| `campusflow/notes.py` | Adds and reads follow-up notes; derives the next note ID from existing notes |
+| `campusflow/storage.py` | Validates whole collections, loads, reloads in place, saves atomically |
+| `campusflow/reports.py` | Ticket totals and breakdowns |
 
+## 6. Error handling
 
-## 8. Installation and Setup
+Business functions raise `ValidationError`, a subclass of `ValueError`. They never print and never request input. `main.py` catches the error and shows a friendly message. A rejected action leaves the ticket collection unchanged.
 
-### Prerequisites
+## 7. Data file format
 
-Install Python 3 and Git. Python 3.10 or later is a suitable baseline for this project structure.
+`tickets.json` is a JSON **list** of ticket objects (see section 4). There is no envelope object.
 
-Verify the installations:
+- **Loading** validates the whole file first: structure, required keys, ticket ID format and uniqueness, category, urgency and status values, priority consistency, assignment rules and note shape and uniqueness per ticket. If any record is invalid the load is rejected with a clear message, and the data already in memory is not changed. A missing file starts an empty collection.
+- **Saving** validates the collection first and writes to a temporary file that then replaces `tickets.json`, so a failure cannot leave a half-written file.
+- **Compatibility.** Files from the first version (tickets without a `notes` field) still load, and no migration is required. The `notes` field is added when a ticket receives its first note.
+
+## 8. Setup
+
+Install Python 3.10 or later and Git, then check:
 
 ```bash
 python --version
 git --version
 ```
 
-Depending on your operating system, you may need to use `python3` instead of `python`.
-
-### Clone the Repository
-
-Replace the URL with your team's actual GitHub repository URL.
+On some systems the command is `python3`.
 
 ```bash
-git clone https://github.com/michaelbag8/campusflow-my
-cd campusflow-my
+git clone https://github.com/yini-19/campusflow-lantana_nicodemus.git
+cd campusflow-lantana_nicodemus
 ```
 
-### Optional: Create a Virtual Environment
-
-On Windows:
+A virtual environment is optional, because no packages are installed:
 
 ```bash
 python -m venv .venv
+# Windows
 .venv\Scripts\activate
-```
-
-On macOS or Linux:
-
-```bash
-python3 -m venv .venv
+# macOS / Linux
 source .venv/bin/activate
 ```
 
-CampusFlow uses the Python standard library, so installing external packages should not be necessary.
-
 ## 9. Running CampusFlow
 
-From the project root, run:
+From the project root:
 
 ```bash
 python main.py
 ```
 
-The CLI should present a menu containing the following options:
+Current menu:
 
-1. Create a ticket.
-2. List all tickets.
-3. View a ticket by ID.
-4. Assign a ticket.
-5. Change ticket status.
-6. Display the work queue.
-7. Generate a report.
-8. Reopen a resolved ticket.
-9. Exit.
+1. Create ticket
+2. List all tickets
+3. View ticket
+4. Assign ticket to staff
+5. Change status
+6. Work queue (open tickets only)
+7. Reports
+8. Reopen ticket
+9. Exit
 
+> **Engineer B to update:** add the Search, Add Follow-up Note, View Ticket Notes and Engineering Understanding Check options here when they are merged.
 
-## 10. Running Automated Tests
+## 10. Running the tests
 
-CampusFlow uses Python's built-in `unittest` framework.
-
-Run the complete test suite from the repository root:
+From the project root, in a fresh clone:
 
 ```bash
 python -m unittest discover -s tests -v
 ```
 
-The test cover:
+The suite covers:
 
-* Successful ticket creation.
-* Priority calculation and rule boundaries.
-* Invalid input rejection.
-* Assignment and unknown ticket IDs.
-* Status transitions and assignment requirements.
-* Reopening resolved tickets.
-* Work queue priority ordering and numeric ID tie-breaking.
-* Correct reports, including an empty ticket list.
-* JSON save-and-load behavior.
-* Unique ticket IDs after reloading existing tickets.
+- Priority rules and their boundaries
+- Creation, assignment, status changes, reopening and the Open Work Queue
+- Rejected actions leaving the whole collection unchanged
+- Invalid `affected_users` (zero, negative, decimal, text, boolean), categories and urgencies
+- Notes: IDs, length limits, resolved tickets, reopening, and rejected notes not consuming an ID
+- JSON: round trips with notes, corrupt JSON, duplicate IDs, invalid records, old-format files, ID continuity and atomic saving
+- Report counts after resolve and reopen
 
+## 11. Development workflow
 
-### Pull Request Links
+- Work is done on feature branches (for example `feat/15-validation-and-notes`), linked to GitHub issues.
+- Nothing is committed directly to `main`.
+- Each pull request is reviewed and approved by the other engineer before it is merged, and the full suite is run again after each merge.
+- `docs/baseline-check.md` records the audited state of the first version.
+- `docs/design-decisions.md` records the agreed function contracts.
+- `docs/ai-learning-log.md` records how AI was used for learning and how each suggestion was verified.
 
-* Engineer A's PR: [PR Link](https://github.com/yini-19/campusflow-my/pull/5#issue-5791514130)
-* Engineer B's PR: [PR Link](https://github.com/yini-19/campusflow-my/pull/7#issue-5795730642)
+### Pull requests
+
+- Baseline check and work queue fix: [#14](https://github.com/yini-19/campusflow-lantana_nicodemus/pull/14)
+- Engineer A feature PR: *(add link)*
+- Engineer B feature PR: *(add link)*
