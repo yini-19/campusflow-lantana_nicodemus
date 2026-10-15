@@ -464,3 +464,332 @@ My next step is to apply the concepts to CampusFlow, run the relevant tests, ins
 * [ ] Added real commit SHAs or pull request links where available.
 * [ ] Can explain each concept without reading the AI response.
 * [ ] Documented at least one AI suggestion that I independently corrected, improved, or rejected after checking it.
+
+--------------------------------------------------
+--------------------------------------------------
+
+# CampusFlow Next — Engineer A Learning Log (Reliability Sprint)
+
+### Fellow: LANTANA YUSUF
+### Role: Engineer A — Ticket Safety and Storage Engineer
+### Branch / PR: `feat/15-validation-and-notes` (PR #16), baseline PR #14
+### Scope: validation helpers, status and assignment safety, follow-up notes, JSON validation, save/load and ID continuity
+
+> **Before you submit.** The technical facts, test names, commit hashes and results below come from the real work on this repository. Three things are personal to you, so check them: (1) in each cycle, paste the **exact wording** you typed to the AI where the entry shows the suggested wording; (2) run the **"Reproduce it yourself"** commands and make sure what you saw matches what is written (change the text if it differs); (3) write your own sentence for the code-review improvement at the end. Delete this box when done.
+
+## Summary of Learning Cycles
+
+| # | Concept | Learning gap | Test that guards it |
+| --- | --- | --- | --- |
+| 1 | 2 — conditions, types, validation | Booleans pass an `isinstance(x, int)` check | `test_rejects_boolean_even_though_bool_is_an_int` |
+| 2 | 1, 2, 5 — contracts, validate-before-mutate, state tests | How to prove a rejected action changed nothing | `TestRejectedActionsChangeNothing` (`test_ticket_safety.py`) |
+| 3 | 4 — files and error handling | `json.load` succeeds on unsafe data; safe saving | `test_storage_safety.py` |
+| 4 | 5, 7 — tests and AI | A suggestion changed after reading test failures (team requirement) | `test_old_ticket_without_notes_key_still_loads` |
+| 5 | 6 — Git collaboration | A passing branch does not prove a working `main` | `test_cli_views.py`, suite run on merged `main` |
+
+Other concepts covered in the code: numeric ID comparison (`T10` after `T2`) is tested by `test_get_notes_returns_notes_in_id_order`, `test_next_note_id_continues_after_the_highest_existing_id` and `test_next_ticket_id_continues_after_reload`.
+
+---
+
+# Cycle 1 — Why `isinstance(True, int)` Is Not Enough
+
+### Original concept gap
+`affected_users` must be a strictly positive integer. The first version only ran `text.isdigit()` inside the input prompt, so no function could validate a value that was already a Python number, and nothing stopped `True` from being treated as `1`.
+
+### Exact question asked
+*"Explain why `isinstance(True, int)` is `True` in Python and how to reject booleans when I need a positive integer. Use an unrelated example, such as a number-of-seats field in a cinema booking. Do not write my CampusFlow function."*
+
+### Summary of AI guidance
+`bool` is a subclass of `int`, so `True` behaves as `1` and `False` as `0`, and an `isinstance(value, int)` check accepts them. Comparing the exact type with `type(value) is int` rejects booleans, and a separate `value <= 0` check rejects zero and negatives. Floats like `2.5` and strings like `"5"` also fail the type check.
+
+### Tiny unrelated experiment
+```python
+print(isinstance(True, int))   
+print(type(True) is int)       
+seats = True
+print(seats + 1)               
+```
+Result: the predictions held (`True`, `False`, `2`). A cinema booking that accepted `seats = True` would book one seat without anyone noticing.
+
+### Independent verification
+- `check_affected_users` in `campusflow/validation.py` uses `type(value) is not int`.
+- `tests/test_validation.py` checks `0`, `-3`, `2.5`, `"5"`, `True` and `False`.
+- **Mutation check:** I changed the line to `not isinstance(value, int)` and ran the tests. `test_rejects_boolean_even_though_bool_is_an_int` failed for `value=True`. After restoring `type(value) is not int` it passed again.
+
+### Final engineering decision
+Use `type(value) is int` plus a positive check. The CLI converts typed text to an `int` before calling the helper, and the old `isdigit()` prompt now sits behind the same rule.
+
+### Reflection
+- **What did I believe before?** The old code only inspected typed text, so I had no check for values that were already numbers.
+- **What did AI explain?** Why `bool` passes `isinstance(x, int)`, and how an exact type check avoids it.
+- **Which claim did I test?** That swapping to `isinstance` would let `True` through.
+- **What did the test show?** The boolean test failed with `value=True`.
+- **What did I change in my code?** `check_affected_users` now uses `type(value) is int`.
+- **Which test guards it?** `test_rejects_boolean_even_though_bool_is_an_int`.
+- **Could I explain it without AI?** Yes: `True` is an `int` subclass, so `isinstance` accepts it, and `type(x) is int` does not.
+
+### Reproduce it yourself
+```bash
+python3 -c "print(isinstance(True, int), type(True) is int)"
+I edited validation.py: changed `type(value) is not int` to `not isinstance(value, int)`
+python3 -m unittest tests.test_validation -v      expect 1 failure for True
+I restored the line, then reran: passed OK
+```
+
+---
+
+# Cycle 2 — Validate Before Mutate, and Proving "Nothing Changed"
+
+### Original concept gap
+`change_status` and `assign_ticket` already checked some rules, but the rules were spread through each function, and no test proved that a rejected action left the **whole collection** exactly as it was. The sprint asks: "If an invalid action returns an error, how will you prove the ticket dictionary did not change at all?"
+
+### Exact question asked
+*"Explain how to validate a dictionary BEFORE mutating it, using a library-books example, then quiz me. How can a unittest prove the dictionary did not change after an error?"*
+
+### Summary of AI guidance
+Split each function into two phases: check everything first (inputs and current state), then change data only if every check passed. Put the rules in a function that never mutates (`check_transition`). To test it, take `copy.deepcopy` of the data before the action, run the action inside `assertRaises`, and afterwards assert the data equals the copy. A plain `print` of an error proves nothing about the data.
+
+### Tiny unrelated experiment
+```python
+import copy
+library = [{"isbn": "1", "copies": 0}]
+before = copy.deepcopy(library)
+
+def lend(books, isbn):
+    book = [b for b in books if b["isbn"] == isbn][0]
+    book["copies"] -= 1                      # mutates first, checks later (bug)
+    if book["copies"] < 0:
+        raise ValueError("no copies left")
+
+try:
+    lend(library, "1")
+except ValueError:
+    pass
+print(library == before)    # predicted False: the error was raised but data changed
+```
+Result: `False`. The function raised an error **and** changed the data. Moving the check before the change makes it `True`.
+
+### Independent verification
+- `campusflow/workflow.py` now has `find_ticket` and `check_transition(ticket, new_status)`, which only raises. `assign_ticket`, `change_status` and `reopen_ticket` call them first and mutate last.
+- `tests/test_ticket_safety.py` has the helper `assert_rejected_and_unchanged` (snapshot, run, expect `ValidationError`, compare). It covers an unassigned ticket moving to `in_progress` (milestone A2), assigning a resolved ticket (A3), blank staff names, unknown IDs, invalid status names, open to resolved, resolved to `in_progress`, reopening a non-resolved ticket, and one bad ticket leaving the others alone.
+- **Mutation check:** I moved `ticket["status"] = new_status` above `check_transition(...)`. The safety tests then reported 4 failures and 1 error. Restoring the order made all 10 pass.
+
+### Final engineering decision
+Keep all transition rules in `check_transition`, validate first and mutate last in every function, and use the snapshot helper for every "rejected action" test.
+
+### Reflection
+- **What did I believe before?** That an error message being shown meant the action had been safely rejected.
+- **What did AI explain?** A function can raise an error and still have changed data, so state must be checked directly.
+- **Which claim did I test?** That mutating before checking leaves data changed after the error.
+- **What did the test show?** With the order swapped, the snapshot comparison failed in several tests.
+- **What did I change in my code?** Moved the rules into `check_transition`; mutation now happens last.
+- **Which test guards it?** `TestRejectedActionsChangeNothing` in `tests/test_ticket_safety.py`.
+- **Could I explain it without AI?** Yes: a ticket invariant is a rule that must always hold (an `in_progress` ticket is assigned, a resolved ticket is not edited); validating first means a failed action never breaks it.
+
+### Reproduce it yourself
+```bash
+python3 -m unittest tests.test_ticket_safety -v     # expect 10 OK
+# in workflow.py change_status, move `ticket["status"] = new_status` above check_transition(...)
+python3 -m unittest tests.test_ticket_safety -v     # expect failures
+# restore, rerun: expect OK
+```
+
+---
+
+# Cycle 3 — `json.load` Can Succeed on Unsafe Data
+
+### Original concept gap
+The first version's `load_tickets` only checked that the file held a list. The sprint requires validating the whole collection before replacing memory, rejecting duplicate IDs and malformed records, and not damaging the file when saving.
+
+### Exact question asked
+*"Why might `json.load` succeed but return unsafe or inconsistent business data? Use an unrelated library-books example with duplicate ISBNs. Do not write my CampusFlow loader."*
+
+### Summary of AI guidance
+`json.load` only proves the text is valid JSON syntax, not that it follows business rules. The safe order is: decode into a **new** object, validate every record and the cross-record rules (duplicate IDs), and only then replace the data in memory. For saving, write to a temporary file in the same folder and swap it in with `os.replace`, so a crash cannot leave a half-written file.
+
+### Tiny unrelated experiment
+```python
+import json
+data = json.loads('[{"isbn":"1","copies":2},{"isbn":"1","copies":-5}]')
+print(len(data))     # predicted 2, with no error
+```
+Result: `2`. Two books with the same ISBN and a negative stock count decoded without any error.
+
+### Independent verification
+- I reproduced the problem on the original loader: a file with two tickets with ID `T001`, one with category `Bogus`, `affected_users` of `-5` and status `weird` loaded without complaint and returned both records.
+- `campusflow/storage.py` now has `validate_ticket`, `validate_collection`, `load_tickets(path)`, `reload_tickets(tickets, path)` and an atomic `save_tickets(tickets, path)`.
+- `tests/test_storage_safety.py` (13 tests) covers: notes and the next note ID (`N003`) surviving save and load; the next ticket ID continuing after reload (`T001`, `T010` give `T011`); old tickets without `notes` loading; corrupt JSON, duplicate IDs and one bad record each rejecting the load with the memory list and file unchanged; 16 kinds of invalid record; and saving invalid data leaving the previous file untouched with no `.tmp` file left behind.
+- **Mutation check:** I disabled the duplicate-ID check and 2 tests failed; restoring it made them pass.
+
+### Final engineering decision
+Validate the whole file before use, replace memory only after a successful load (`reload_tickets` assigns `tickets[:] = loaded` last), refuse to save invalid data, and write atomically. Next IDs are derived from the highest existing number, not from stored counters, so a reload cannot cause a collision.
+
+### Reflection
+- **What did I believe before?** That if `json.load` did not raise an error, the data was safe to use.
+- **What did AI explain?** Decoding checks syntax only; business rules need a separate validation step.
+- **Which claim did I test?** That the old loader would accept duplicate IDs and invalid values.
+- **What did the test show?** It loaded both duplicate tickets and returned them.
+- **What did I change in my code?** Added validation before replacing memory, and an atomic save.
+- **Which test guards it?** `test_duplicate_ticket_ids_rejected_and_memory_kept`, `test_one_bad_record_rejects_the_whole_file`, `test_saving_invalid_collection_leaves_existing_file_untouched`.
+- **Could I explain it without AI?** Yes: I can demonstrate a duplicate-ID file being rejected with memory unchanged.
+
+### Reproduce it yourself
+```bash
+python3 -m unittest tests.test_storage_safety -v
+# in storage.py validate_collection, change `if ticket["id"] in seen_ids:` to `if False:`
+python3 -m unittest tests.test_storage_safety -v    # expect failures
+# restore, rerun: expect OK
+```
+
+---
+
+# Cycle 4 — A Suggestion I Changed After Running the Tests (team requirement)
+
+### Original concept gap
+I needed to decide what happens when an old ticket (from the first version) has no `notes` field, and how to word validation errors without breaking tests that already existed.
+
+### Exact question asked
+*"Should loading old JSON add a `notes: []` field to every ticket, and which existing tests might that affect? Tell me what to check; I will run the tests."*
+
+### Summary of AI guidance
+The first suggestion, recorded in the contract, was that a ticket without `notes` should load as `notes: []`. A second suggestion was the error text "Staff name must not be blank". Both were proposals to verify, not facts.
+
+### Tiny unrelated experiment
+A small dictionary round trip: save `{"title": "A"}`, load it, add a default key during loading, and compare with the original using `==`. Adding the key made the loaded data unequal to what was saved. Run it and record the output.
+
+### Independent verification
+Running the existing suite after the change showed three things:
+1. Two first-version storage tests compare loaded tickets to saved ones with exact equality, and their fixtures have no `notes`. Rewriting records on load would have forced me to edit their assertions and weaken the regression evidence. `add_note` and `get_notes` already cope with a missing `notes` key.
+2. `test_assign_ticket_rejects_empty_staff_name` expects the text "cannot be empty". My message did not match, so it failed.
+3. The stricter loader failed `test_save_and_load_multiple_tickets`, because its second fixture ticket had high urgency, 12 users and priority `low`, which contradicts the priority rule. The old test had been passing with inconsistent data.
+
+### Final engineering decision
+Rejected the `notes: []` normalization: a missing `notes` key is accepted as "no notes", and the key is added when the first note is written (documented in section 12 of `docs/design-decisions.md`). Changed the helper message to "Staff name cannot be empty" instead of editing the old test. For the inconsistent fixture, I changed only its values (urgency `low`, 1 affected user) and kept every assertion.
+
+
+### Reflection
+- **What did I believe before?** That adding a default `notes` field on load would be harmless.
+- **What did AI explain?** It listed the old tests and messages to check before deciding.
+- **Which claim did I test?** That existing tests would still pass after the change.
+- **What did the test show?** Three failures, each with a different cause.
+- **What did I change in my code?** The loader tolerates a missing key, the error message matches, and one old fixture was corrected.
+- **Which test guards it?** `test_old_ticket_without_notes_key_still_loads` (`test_storage_safety.py`) and `test_old_ticket_without_notes_key_still_works` (`test_notes.py`).
+- **Could I explain it without AI?** Yes: assertions in regression tests should not be edited to make new code pass, and a fixture can itself be wrong.
+
+### Reproduce it yourself
+```bash
+python3 -m unittest discover -s tests -v    # all pass on your branch
+# temporarily make load_tickets add `ticket.setdefault("notes", [])` for each record
+python3 -m unittest discover -s tests -v    # note which old tests fail
+```
+
+---
+
+# Cycle 5 — A Passing Branch Does Not Prove a Working `main`
+
+### Original concept gap
+My branch had a full passing suite, and so did Engineer B's. I believed that merging two passing branches would give a passing project. The sprint says tests must run on the **merged** `main`.
+
+### Exact question asked
+*"After merging my PR and my partner's PR, `python3 main.py` fails with `ImportError: cannot import name 'generate_report'`. Help me find why, without rewriting my partner's module."*
+
+### Summary of AI guidance
+Read the traceback from the bottom up, find which file asked for the missing name, and look at what that module exports now. Then compare `origin/main` with the last passing branch, run the suite in a clean checkout of `origin/main`, and fix the caller or the contract, not just the symptom.
+
+### Tiny unrelated experiment
+Two small files: `a.py` defines `def greet(): ...` and `b.py` runs `from a import greet`. Renaming `greet` to `say_hello` in `a.py` makes `b.py` fail with the same kind of `ImportError`, even though `a.py` itself still works. Try it and record the message.
+
+### Independent verification
+On `origin/main` after PR #17:
+- `main.py` still imported `generate_report`, but Engineer B had replaced it with `build_report` and `format_report` (and renamed the keys `total`, `by_status`, `by_priority`).
+- `campusflow/cli_views.py` imported a `get_all_tickets` that does not exist and called `add_note(ticket_id, author, message)` with the old three-argument form.
+- The menu text listed notes as options 9 and 10 and exit as 11, but the code treated 9 as exit.
+- The suite ran 107 tests with 1 error (my bug-hunter test imported the old function name).
+
+A fix branch `fix/integrate-cli` updates `main.py` and `cli_views.py` to the real APIs and adds `tests/test_cli_views.py` (scripted input, no typing). With it, the suite ran 117 tests, all passing, and a scripted session through `main.py` (report, search, add note, view notes, invalid choice, exit) worked.  Update with the PR number and merge date when the fix is merged.
+
+### Final engineering decision
+Run the full suite on the merged `main` after every merge, use `grep` to find every caller before renaming a public function, record signature changes in `docs/design-decisions.md` before merging, and treat contract items that Engineer B has not confirmed (section 11) as risks.
+
+### Reflection
+- **What did I believe before?** That two passing branches would merge into a working application.
+- **What did AI explain?** Unit tests on each branch cannot see a rename in another module, and only a run of the merged code can.
+- **Which claim did I test?** That the suite on `origin/main` passes.
+- **What did the test show?** One import error, and the app crashed on start.
+- **What did I change in my code?** I updated the bug-hunter test to the new API and added CLI wiring tests, and the fix connects `main.py` to the views.
+- **Which test guards it?** `tests/test_cli_views.py` and the rerun of `python3 -m unittest discover -s tests -v` on `main`.
+- **Could I explain it without AI?** Yes: a contract change by one engineer needs its callers updated and the merged suite rerun.
+
+### Reproduce it yourself
+```bash
+git checkout main && git pull
+python3 -m unittest discover -s tests -v
+python3 main.py
+```
+
+---
+
+# Answers to the Engineer A Questions (for the live defence)
+
+1. **What data is validated before any mutation?** Staff names, note author and message, the ticket ID, the status name, and the current status and assignment (`check_transition`).
+2. **What is a ticket invariant?** A rule that must always be true, such as "an `in_progress` ticket is assigned", "a resolved ticket is not edited", "priority matches the priority rule", and "IDs are unique". `validate_ticket` checks all of them.
+3. **Why doesn't a successful print statement prove data integrity?** Printing shows a message, not the state of the data. A function can print a success message or raise an error and still have changed or corrupted the ticket (Cycle 2).
+4. **Why do you validate JSON after decoding?** `json.load` only proves the syntax is valid; a file can decode into duplicate IDs or invalid statuses (Cycle 3).
+5. **How do you prevent partial changes if one entry is invalid?** `validate_collection` checks every record before anything is returned, and `reload_tickets` replaces the list only after the load succeeds. A single bad record rejects the whole file.
+6. **How do you test both a thrown error and unchanged state?** Take a `copy.deepcopy`, call the action inside `assertRaises(ValidationError)`, then assert the data equals the copy (`assert_rejected_and_unchanged`).
+7. **Which AI recommendation did you accept only after verification?** Using `type(value) is int` for `affected_users`, after running the `isinstance(True, int)` experiment and the failing mutation test (Cycle 1).
+
+### Live defence prompts
+1. **Invariant my functions guarantee:** a rejected action leaves the collection unchanged, and a note is never added to a resolved ticket.
+2. **Test that failed before I corrected a bug:** the boolean test when `isinstance` was used; the three existing tests described in Cycle 4; and the import error on merged `main` (Cycle 5).
+3. **How rejected actions avoid changing state:** validate first with `check_transition`, mutate last; `add_note` builds the note only after every check passes.
+4. **Duplicate IDs on load:** `ValidationError` ("duplicate ticket id"), memory and file unchanged (`test_duplicate_ticket_ids_rejected_and_memory_kept`).
+5. **(Filters use AND):** a ticket must match every supplied filter, because filters narrow a result; this is Engineer B's area, but the rule is in `design-decisions.md`.
+6. **How I checked an AI recommendation:** a small unrelated experiment, then a test, then a deliberate mutation to see the test fail.
+7. **My PR and a review I gave:** PR #16 (`feat/15-validation-and-notes`); add a link to a substantive review comment you left on Engineer B's PR.
+8. **If the mentor changes one rule:** for note length, change `NOTE_MIN_LENGTH` and `NOTE_MAX_LENGTH` in `validation.py` and update the boundary test in `test_notes.py`; for a status rule, change `check_transition` in `workflow.py` and `test_ticket_safety.py`.
+
+---
+
+# Evidence Map
+
+| Requirement | Where it lives |
+| --- | --- |
+| Baseline check and queue fix | `docs/baseline-check.md`, PR #14 |
+| Validation helpers | `campusflow/validation.py`, `tests/test_validation.py` |
+| Status and assignment safety | `campusflow/workflow.py`, `tests/test_ticket_safety.py` |
+| Notes | `campusflow/notes.py`, `tests/test_notes.py` |
+| Safe JSON and ID continuity | `campusflow/storage.py`, `tests/test_storage_safety.py` |
+| Bug-hunter test for Engineer B's module | `tests/test_bug_hunter_reports.py` |
+| Design contracts | `docs/design-decisions.md` |
+
+Commits on `feat/15-validation-and-notes`:
+
+| Commit | Message |
+| --- | --- |
+| `af1ad9c` | feat: add centralized validation helpers |
+| `fa73b3b` | fix: validate before mutating in assign and status changes |
+| `f15d6f3` | test: prove rejected actions leave tickets unchanged |
+| `8fc7e23` | feat: add structured follow-up notes |
+| `22984ef` | test: cover note validation, ID rules and resolved tickets |
+| `716e09d` | feat: validate JSON before load and save atomically |
+| `1eb30ad` | test: cover corrupt JSON, duplicate IDs and ID continuity |
+| `4b12b75` | fix: compare queue status with equality, not substring |
+
+# Final Reflection (Individual)
+
+**One verified mistake.** My first helper message for a blank staff name, "Staff name must not be blank", did not match the existing test's expected text, "cannot be empty", and the test failed. I verified it by running the suite, and fixed the helper instead of editing the old test.
+
+**One learning gain.** A successful `json.load`, a printed error or a passing branch is not evidence that the data or the application is correct. Evidence is a test that checks the state before and after a rejected action, and a suite run on the merged `main`.
+
+**One improvement received through code review.**  Write this after Engineer B's review of PR #16, naming the file or test the comment was about and what you changed.
+
+### Evidence Checklist
+- [ ] I ran the `isinstance(True, int)` lines and my output matches Cycle 1.
+- [ ] I broke `check_affected_users` on purpose and saw the boolean test fail.
+- [ ] I broke the order in `change_status` and saw the safety tests fail.
+- [ ] I reproduced the old loader accepting duplicate IDs.
+- [ ] I broke the duplicate-ID check and saw the storage tests fail.
+- [ ] I ran the suite on merged `main` and confirmed the result in Cycle 5.
+- [ ] I replaced every  line with my own words.
+- [ ] I can answer the seven Engineer A questions without notes.
