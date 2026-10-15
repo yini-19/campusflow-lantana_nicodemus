@@ -145,3 +145,15 @@ All engineers should run the full test suite before submitting their changes for
 ## 10. Agreement
 
 These decisions serve as the shared contract for the sprint. Any changes to function signatures, ticket fields, or return values must be agreed upon by both fellows and documented here before integrating code that could introduce incompatibilities.
+
+# CampusFlow Next Design Decisions
+
+### Contract Agreement
+
+|Decision 	       |Proposed answer
+|Error convention 	|raise ValidationError, a subclass of ValueError|
+|Note API	        |add_note(tickets, ticket_id, author, message) returns the new note dict
+|Reading notes	     |get_notes(tickets, ticket_id) returns notes in ID order|
+|Storage API	     |load_tickets(path) returns a validated list; save_tickets(tickets, path)|
+|Ticket without notes key (old data)|   |	treated as notes: [] on load|
+|Who converts CLI text to numbers   |	the CLI converts input to int before calling validators|
