@@ -793,3 +793,106 @@ Commits on `feat/15-validation-and-notes`:
 - [ ] I ran the suite on merged `main` and confirmed the result in Cycle 5.
 - [ ] I replaced every  line with my own words.
 - [ ] I can answer the seven Engineer A questions without notes.
+
+
+# AI Learning Log: Engineer B (Search, Reporting and CLI)
+
+**Name:** Yiyakazah Nicodemus
+**Role:** Engineer B
+**Project:** CampusFlow Next
+**Branch:** feat/11-search-and-insights 
+
+
+---
+
+## Cycle 1: casefold vs lower for title search
+
+**Original concept gap**
+I was not sure how to make title search case-insensitive, or whether `lower()` and `casefold()` behave differently. (Concept 2 and Concept 7 in the diagnostic.)
+
+**Exact question asked**
+"Compare casefold and lower for search; suggest test cases but do not implement my project."
+
+**Summary of AI guidance**
+- `lower()` converts to lowercase. `casefold()` is a more aggressive version designed for caseless matching, so it also handles special characters such as the German ß.
+- For matching text, `casefold()` should be applied to both the search text and the title.
+- Suggested test cases: mixed case, an uppercase query against a lowercase title, a substring in the middle of a title, and an empty query.
+
+**Tiny unrelated experiment** (scratch file, not the project)
+```py
+print("Straße".lower() == "STRASSE".lower())
+print("Straße".casefold() == "STRASSE".casefold())
+```
+Output I observed: I Expected `False` then `True` and that was exactly the output
+
+**Independent verification**
+- Python documentation for `str.casefold` (link: https://docs.python.org/3/library/stdtypes.html#str.casefold)
+- My own test: `test_title_search_ignores_case_and_matches_substring` in `tests/test_search.py`
+
+**What the test showed**
+The test passed for "WIFI" matching "WiFi down in lab" and "wifi slow".
+
+**Final engineering decision**
+`search_tickets` applies `casefold()` to both the query and each ticket title, and uses substring matching (`in`). An empty query means "do not filter by title".
+
+**Personal reflection**
+- What did I believe before? i didn't know that .lower() was different from .casefold()
+- What did AI explain? casefold is built for caseless comparison and handles more characters than lower.
+- Which claim did I test? That `lower()` and `casefold()` can give different answers.
+- What did the test show? the test showed that .casefold() handles more characters than .lower()
+- What did I change in MY code? I changed lower() to casefold() so that it covers more characters  
+- Which test guards this learning? `test_title_search_ignores_case_and_matches_substring`
+- Could I explain this choice without AI in the room? Yes `casefold()` covers more characters than `lower()`
+
+---
+
+## Cycle 2: Deterministic ordering and the "T10 vs T2" problem
+
+**Original concept gap**
+I did not know why sorting ticket IDs as text can give the wrong tie-breaker. (Concept 3.)
+
+**Exact question asked**
+"Why might sorting text IDs like 'T10' and 'T2' give a wrong order, and how can I sort by a key function instead? Explain with a small example, do not write my project."
+
+**Summary of AI guidance**
+- Python compares strings character by character, so "T10" comes before "T2" because "1" is less than "2".
+- A key function can extract the numeric part and sort on that.
+- For priority-then-ID ordering, the key can be a pair of values, so ties on priority are broken by the numeric ID.
+
+**Tiny unrelated experiment**
+```PY
+print(sorted(["T10", "T2", "T1"]))
+print(sorted(["T10", "T2", "T1"], key=lambda t: int(t[1:])))
+```
+Output I observed: Expected: `['T1', 'T10', 'T2']` then `['T1', 'T2', 'T10']` and that was the final output
+
+**Independent verification**
+- Python Sorting HOWTO (https://docs.python.org/3/howto/sorting.html)
+- My own test: `test_sort_uses_numeric_id_for_ties` in `tests/test_search.py`
+
+**What the test showed**
+The test passed, and T2 came before T10 because the sort key uses the number, not the text
+
+**Final engineering decision**
+`sort_by_priority_then_id` sorts by a (priority rank, numeric ticket ID) pair. The original Open Work Queue is left unchanged, and this is a separate optional view.
+
+**Personal reflection**
+- What did I believe before? I thought sorting IDs as text would give the right order.
+- What did AI explain? Text sorting is character by character, so numbers inside IDs need a numeric key.
+- Which claim did I test? That text order puts T10 before T2.
+- What did the test show? The test passed, and T2 came before T10 because the sort key uses the number, not the text
+
+- What did I change in MY code? sorted with a (priority rank, numeric ID) key in sort_by_priority_then_id
+- Which test guards this learning? `test_sort_uses_numeric_id_for_ties`
+- Could I explain this choice without AI in the room? yes, casefold handles special characters like ß, so I use it for comparisons
+
+---
+### Evidence checklist
+- Ran both comparison lines (lower() and casefold() on “Straße” vs “STRASSE”) on your own machine
+- Saw False for lower() and True for casefold()
+- Saved proof: a screenshot of the terminal, or the output pasted into your log
+- Wrote one sentence in your own words explaining why the results differ
+- Ran the plain sorted on ["T10", "T2", "T1"] and saw ['T1', 'T10', 'T2']
+- Ran the version with a numeric key and saw ['T1', 'T2', 'T10']
+- Saved proof 
+- Wrote one sentence explaining why text order puts “T10” before “T2” (it compares character by character, and “1” comes before “2”)
