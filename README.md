@@ -234,4 +234,4 @@ The suite covers:
 
 - Baseline check and work queue fix: [#14](https://github.com/yini-19/campusflow-lantana_nicodemus/pull/14)
 - Engineer A feature PR: *(add link)*
-- Engineer B feature PR: *(add link)*
+- Engineer B feature PR: *[#17](https://github.com/yini-19/campusflow-lantana_nicodemus/pull/17)*
