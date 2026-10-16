@@ -781,9 +781,7 @@ Commits on `feat/15-validation-and-notes`:
 **One verified mistake.** My first helper message for a blank staff name, "Staff name must not be blank", did not match the existing test's expected text, "cannot be empty", and the test failed. I verified it by running the suite, and fixed the helper instead of editing the old test.
 
 **One learning gain.** A successful `json.load`, a printed error or a passing branch is not evidence that the data or the application is correct. Evidence is a test that checks the state before and after a rejected action, and a suite run on the merged `main`.
-
-**One improvement received through code review.**  Write this after Engineer B's review of PR #16, naming the file or test the comment was about and what you changed.
-
+cl
 ### Evidence Checklist
 - [ ] I ran the `isinstance(True, int)` lines and my output matches Cycle 1.
 - [ ] I broke `check_affected_users` on purpose and saw the boolean test fail.
