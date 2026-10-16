@@ -10,8 +10,8 @@ CampusFlow Next is a quality upgrade of our first version. It adds stricter vali
 
 | Engineer | GitHub | Responsibilities |
 | --- | --- | --- |
-| Engineer A: YIYAKAZAH NICODEMUS | `yini-19` | Validation helpers, status and assignment safety, follow-up notes, JSON validation, save/load and ID continuity |
-| Engineer B: *(full name to add)* | `michaelbag8` | Search and filtering, reports, notes menus in the CLI, Engineering Understanding Check |
+| Engineer A: LANTANA YUSUF | `lantana610` | Validation helpers, status and assignment safety, follow-up notes, JSON validation, save/load and ID continuity |
+| Engineer B: YIYAKAZAH NICODEMUS | `yini-19` | Search and filtering, reports, notes menus in the CLI, Engineering Understanding Check |
 
 Both engineers agree the function contracts, write tests and review each other's pull requests.
 
