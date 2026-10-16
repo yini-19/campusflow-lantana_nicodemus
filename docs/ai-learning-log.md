@@ -475,8 +475,6 @@ My next step is to apply the concepts to CampusFlow, run the relevant tests, ins
 ### Branch / PR: `feat/15-validation-and-notes` (PR #16), baseline PR #14
 ### Scope: validation helpers, status and assignment safety, follow-up notes, JSON validation, save/load and ID continuity
 
-> **Before you submit.** The technical facts, test names, commit hashes and results below come from the real work on this repository. Three things are personal to you, so check them: (1) in each cycle, paste the **exact wording** you typed to the AI where the entry shows the suggested wording; (2) run the **"Reproduce it yourself"** commands and make sure what you saw matches what is written (change the text if it differs); (3) write your own sentence for the code-review improvement at the end. Delete this box when done.
-
 ## Summary of Learning Cycles
 
 | # | Concept | Learning gap | Test that guards it |
