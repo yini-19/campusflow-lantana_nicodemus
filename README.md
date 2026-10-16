@@ -198,7 +198,11 @@ Current menu:
 6. Work queue (open tickets only)
 7. Reports
 8. Reopen ticket
-9. Exit
+9. Add Follow-up notes
+10. View ticket notes
+11. Search ticket
+12. Understanding check
+13. Exit
 
 > **Engineer B to update:** add the Search, Add Follow-up Note, View Ticket Notes and Engineering Understanding Check options here when they are merged.
 
