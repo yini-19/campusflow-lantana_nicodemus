@@ -29,7 +29,7 @@ No web framework, database, API key or external package is needed.
 
 ### Original features (preserved)
 
-| Feature | Behaviour |
+| Feature | Behavior |
 | --- | --- |
 | Create tickets | Title, category, urgency and affected users are validated; ID and priority are generated |
 | List / view tickets | Show all tickets or one ticket by ID |
@@ -47,7 +47,6 @@ No web framework, database, API key or external package is needed.
 - **Safe JSON.** A file is fully validated before it replaces memory. Corrupt JSON, duplicate IDs and inconsistent records are rejected and current data is kept. Saving is atomic, so a failed write cannot corrupt the existing file.
 - **ID continuity.** After a reload, new ticket and note IDs continue from the highest existing number.
 
-> **Engineer B to complete:** Search Tickets, the enhanced report fields (category counts, unresolved and resolved counts, resolution percentage), the notes menu entries and the Engineering Understanding Check. Add them here, with their menu numbers, once their PR is merged.
 
 ## 4. Ticket data structure
 
@@ -203,8 +202,6 @@ Current menu:
 11. Search ticket
 12. Understanding check
 13. Exit
-
-> **Engineer B to update:** add the Search, Add Follow-up Note, View Ticket Notes and Engineering Understanding Check options here when they are merged.
 
 ## 10. Running the tests
 
